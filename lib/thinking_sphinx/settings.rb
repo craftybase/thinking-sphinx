@@ -8,7 +8,7 @@ class ThinkingSphinx::Settings
     indices_location configuration_file bin_path log query_log pid_file
     binlog_path snippets_file_prefix sphinxql_state path stopwords wordforms
     exceptions global_idf rlp_context rlp_root rlp_environment plugin_dir
-    lemmatizer_base mysql_ssl_cert mysql_ssl_key mysql_ssl_ca
+    lemmatizer_base mysql_ssl_cert mysql_ssl_key mysql_ssl_ca max_threads_per_query
   ].freeze
   DEFAULTS = {
     "configuration_file"       => "config/ENVIRONMENT.sphinx.conf",
@@ -17,7 +17,6 @@ class ThinkingSphinx::Settings
     "log"                      => "log/ENVIRONMENT.searchd.log",
     "query_log"                => "log/ENVIRONMENT.searchd.query.log",
     "binlog_path"              => "tmp/binlog/ENVIRONMENT",
-    "workers"                  => "threads",
     "mysql_encoding"           => "utf8",
     "maximum_statement_length" => (2 ** 23) - 5,
     "real_time_tidy"           => false,
