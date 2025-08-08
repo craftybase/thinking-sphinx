@@ -161,6 +161,7 @@ class ThinkingSphinx::Configuration < Riddle::Configuration
     if tcp?
       searchd.address = settings['address'].presence || Defaults::ADDRESS
       searchd.mysql41 = settings['mysql41'] || settings['port'] || Defaults::PORT
+      searchd.http = settings['http'] || Defaults::HTTP_PORT || Defaults::HTTP_PORT
     end
 
     searchd.mysql_version_string = '5.5.21' if RUBY_PLATFORM == 'java'
