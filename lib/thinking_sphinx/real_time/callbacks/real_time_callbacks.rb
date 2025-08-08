@@ -48,6 +48,8 @@ class ThinkingSphinx::RealTime::Callbacks::RealTimeCallbacks
         ThinkingSphinx::RealTime::Transcriber.new(index).copy object
       end
     end
+  rescue => ex
+    Rails.logger.error "ThinkingSphinx::RealTime: #{ex.message}"    
   end
 
   def real_time_indices?
