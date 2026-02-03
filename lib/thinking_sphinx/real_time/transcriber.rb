@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'thinking_sphinx/real_time/bulk_inserters'
+
 class ThinkingSphinx::RealTime::Transcriber
   def initialize(index)
     @index = index
@@ -61,14 +63,27 @@ class ThinkingSphinx::RealTime::Transcriber
   end
 
   def insert_replacements(instances)
-    insert = Riddle::Query::Insert.new index.name, columns, values(instances)
-    execute insert.replace!.to_sql
+    inserter_class.new(index, columns, values(instances)).execute
+  end
+
+  def inserter_class
+    protocol = configuration.settings['bulk_import_protocol']
+    case protocol
+    when 'http'
+      ThinkingSphinx::RealTime::BulkInserters::HttpInserter
+    else
+      ThinkingSphinx::RealTime::BulkInserters::SqlInserter
+    end
   end
 
   def instrument(message, options = {})
     ActiveSupport::Notifications.instrument(
       "#{message}.thinking_sphinx.real_time", options.merge(:index => index)
     )
+  end
+
+  def configuration
+    ThinkingSphinx::Configuration.instance
   end
 
   def properties
