@@ -219,6 +219,20 @@ describe ThinkingSphinx::Configuration do
 
       expect(config.common.lemmatizer_base).to eq('foo')
     end
+
+    it 'sets Riddle::Query.escape_characters when configured' do
+      write_configuration 'escape_characters' => '[\(\)\|\-!@~]'
+
+      expect(Riddle::Query.escape_characters).to eq(/[\(\)\|\-!@~]/)
+    end
+
+    it 'does not modify Riddle::Query.escape_characters when not configured' do
+      original = Riddle::Query.escape_characters
+
+      write_configuration 'mem_limit' => '128M'
+
+      expect(Riddle::Query.escape_characters).to eq(original)
+    end
   end
 
   describe '#next_offset' do

@@ -16,3 +16,4 @@ spec/internal/log
 spec/internal/tmp/*
 tmp
 _site
+/.claude

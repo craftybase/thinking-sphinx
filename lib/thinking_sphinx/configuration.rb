@@ -139,11 +139,18 @@ class ThinkingSphinx::Configuration < Riddle::Configuration
     configure_searchd
 
     apply_sphinx_settings!
+    apply_riddle_settings!
 
     @offsets = {}
   end
 
   private
+
+  def apply_riddle_settings!
+    if settings['escape_characters'].present?
+      Riddle::Query.escape_characters = Regexp.new(settings['escape_characters'])
+    end
+  end
 
   def apply_sphinx_settings!
     sphinx_sections.each do |object|

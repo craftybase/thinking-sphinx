@@ -22,7 +22,8 @@ class ThinkingSphinx::Wildcard
       # E.g. "foo bar", with quotes
       is_quote    = proper[/^".*"$/]
       has_star    = post[/\*$/] || pre[/^\*/]
-      if is_operator || is_quote || has_star
+      is_min_len  = proper.size < min_prefix_len
+      if is_operator || is_quote || has_star || is_min_len
         proper
       else
         "*#{proper}*"
@@ -38,5 +39,9 @@ class ThinkingSphinx::Wildcard
     Regexp.new(
       "(\"#{pattern}(.*?#{pattern})?\"|(?![!-])#{pattern})".encode('UTF-8')
     )
+  end
+
+  def min_prefix_len
+    ThinkingSphinx::Configuration.instance.settings["min_prefix_len"] || 0
   end
 end
