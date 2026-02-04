@@ -121,9 +121,9 @@ RSpec.describe ThinkingSphinx::RealTime::Transcriber do
         to receive(:new).and_return(http_inserter)
     end
 
-    context "with bulk_import_protocol set to 'http'" do
+    context "with bulk_protocol set to 'http'" do
       before do
-        configuration.settings['bulk_import_protocol'] = 'http'
+        configuration.settings['bulk_protocol'] = 'http'
       end
 
       it "uses the HttpInserter" do
@@ -140,9 +140,9 @@ RSpec.describe ThinkingSphinx::RealTime::Transcriber do
       end
     end
 
-    context "with bulk_import_protocol set to 'mysql41'" do
+    context "with bulk_protocol set to 'mysql41'" do
       before do
-        configuration.settings['bulk_import_protocol'] = 'mysql41'
+        configuration.settings['bulk_protocol'] = 'mysql41'
       end
 
       it "uses the SqlInserter" do
@@ -153,7 +153,7 @@ RSpec.describe ThinkingSphinx::RealTime::Transcriber do
       end
     end
 
-    context "with no bulk_import_protocol setting" do
+    context "with no bulk_protocol setting" do
       it "defaults to SqlInserter" do
         expect(ThinkingSphinx::RealTime::BulkInserters::SqlInserter).
           to receive(:new).with(index, anything, anything)

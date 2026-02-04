@@ -21,7 +21,7 @@ class ThinkingSphinx::Settings
     "maximum_statement_length" => (2 ** 23) - 5,
     "real_time_tidy"           => false,
     "cutoff"                   => 0,
-    "bulk_import_protocol"     => "mysql41"
+    "bulk_protocol"            => "mysql41"
   }.freeze
   YAML_SAFE_LOAD = YAML.method(:safe_load).parameters.any? do |parameter|
     parameter == [:key, :aliases]

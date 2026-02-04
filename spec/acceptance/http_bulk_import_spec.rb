@@ -5,11 +5,11 @@ require 'acceptance/spec_helper'
 describe 'HTTP bulk import', :live do
   it "imports records via HTTP when configured" do
     # Save original setting
-    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol']
+    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
       # Configure HTTP bulk import
-      ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = 'http'
+      ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
       # Create test products
       product = Product.create!(
@@ -31,18 +31,18 @@ describe 'HTTP bulk import', :live do
     ensure
       # Restore original setting
       if original_protocol
-        ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = original_protocol
+        ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = original_protocol
       else
-        ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+        ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
   end
 
   it "handles large batches efficiently via HTTP" do
-    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol']
+    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
-      ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = 'http'
+      ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
       # Create multiple products
       products = 50.times.map do |i|
@@ -65,18 +65,18 @@ describe 'HTTP bulk import', :live do
       expect(results.to_a.map(&:name)).to include('Bulk Product 25')
     ensure
       if original_protocol
-        ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = original_protocol
+        ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = original_protocol
       else
-        ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+        ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
   end
 
   it "handles various attribute types via HTTP" do
-    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol']
+    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
-      ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = 'http'
+      ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
       # Create product with different attribute types
       product = Product.create!(
@@ -94,19 +94,19 @@ describe 'HTTP bulk import', :live do
       expect(results.to_a).to include(product)
     ensure
       if original_protocol
-        ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = original_protocol
+        ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = original_protocol
       else
-        ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+        ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
   end
 
-  it "falls back to SQL when bulk_import_protocol is mysql41" do
-    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol']
+  it "falls back to SQL when bulk_protocol is mysql41" do
+    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
       # Explicitly set to mysql41
-      ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = 'mysql41'
+      ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'mysql41'
 
       product = Product.create!(
         :name => 'SQL Test Widget',
@@ -120,19 +120,19 @@ describe 'HTTP bulk import', :live do
       expect(results.to_a).to include(product)
     ensure
       if original_protocol
-        ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = original_protocol
+        ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = original_protocol
       else
-        ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+        ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
   end
 
-  it "uses SQL by default when no bulk_import_protocol is set" do
-    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol']
+  it "uses SQL by default when no bulk_protocol is set" do
+    original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
       # Remove the setting to test default behavior
-      ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+      ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
 
       product = Product.create!(
         :name => 'Default Protocol Widget',
@@ -146,9 +146,9 @@ describe 'HTTP bulk import', :live do
       expect(results.to_a).to include(product)
     ensure
       if original_protocol
-        ThinkingSphinx::Configuration.instance.settings['bulk_import_protocol'] = original_protocol
+        ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = original_protocol
       else
-        ThinkingSphinx::Configuration.instance.settings.delete('bulk_import_protocol')
+        ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
   end
