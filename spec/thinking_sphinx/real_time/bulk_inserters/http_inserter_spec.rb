@@ -9,15 +9,27 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
   let(:inserter)      { described_class.new(index, columns, values) }
   let(:configuration) { double('configuration') }
   let(:searchd)       { double('searchd', :address => '127.0.0.1', :http => 9308) }
-  let(:http)          { double('http') }
+  let(:http)          { double('http', :started? => true) }
   let(:response)      { double('response', :code => '200', :body => '{"items":[]}') }
 
   before do
     allow(ThinkingSphinx::Configuration).to receive(:instance).
       and_return(configuration)
     allow(configuration).to receive(:searchd).and_return(searchd)
-    allow(Net::HTTP).to receive(:start).and_yield(http)
+    allow(Net::HTTP).to receive(:new).and_return(http)
+    allow(http).to receive(:open_timeout=)
+    allow(http).to receive(:read_timeout=)
+    allow(http).to receive(:keep_alive_timeout=)
+    allow(http).to receive(:start).and_return(http)
+    allow(http).to receive(:finish)
     allow(http).to receive(:request).and_return(response)
+
+    # Clear thread-local connection before each test
+    Thread.current[:thinking_sphinx_http_connection] = nil
+  end
+
+  after do
+    Thread.current[:thinking_sphinx_http_connection] = nil
   end
 
   describe '#execute' do
@@ -34,9 +46,21 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
     end
 
     it 'uses the correct host and port' do
-      expect(Net::HTTP).to receive(:start).
-        with('127.0.0.1', 9308, open_timeout: 5, read_timeout: 60).
-        and_yield(http)
+      expect(Net::HTTP).to receive(:new).with('127.0.0.1', 9308).and_return(http)
+
+      inserter.execute
+    end
+
+    it 'reuses the connection across multiple calls' do
+      inserter.execute
+
+      second_inserter = described_class.new(index, columns, values)
+      expect(Net::HTTP).not_to receive(:new)
+      second_inserter.execute
+    end
+
+    it 'sets keep_alive_timeout on the connection' do
+      expect(http).to receive(:keep_alive_timeout=).with(30)
 
       inserter.execute
     end
@@ -69,9 +93,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
       end
 
       it 'defaults to 127.0.0.1' do
-        expect(Net::HTTP).to receive(:start).
-          with('127.0.0.1', 9308, open_timeout: 5, read_timeout: 60).
-          and_yield(http)
+        expect(Net::HTTP).to receive(:new).with('127.0.0.1', 9308).and_return(http)
 
         inserter.execute
       end
@@ -83,9 +105,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
       end
 
       it 'defaults to 9308' do
-        expect(Net::HTTP).to receive(:start).
-          with('127.0.0.1', 9308, open_timeout: 5, read_timeout: 60).
-          and_yield(http)
+        expect(Net::HTTP).to receive(:new).with('127.0.0.1', 9308).and_return(http)
 
         inserter.execute
       end
@@ -100,6 +120,12 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
         expect {
           inserter.execute
         }.to raise_error(ThinkingSphinx::ConnectionError, /HTTP bulk import failed/)
+      end
+
+      it 'clears the thread-local connection' do
+        inserter.execute rescue nil
+
+        expect(Thread.current[:thinking_sphinx_http_connection]).to be_nil
       end
     end
 
@@ -139,6 +165,20 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
           inserter.execute
         }.to raise_error(ThinkingSphinx::QueryError, /Failed to parse/)
       end
+    end
+  end
+
+  describe '.close_connection' do
+    it 'finishes an active connection' do
+      Thread.current[:thinking_sphinx_http_connection] = http
+      expect(http).to receive(:finish)
+
+      described_class.close_connection
+      expect(Thread.current[:thinking_sphinx_http_connection]).to be_nil
+    end
+
+    it 'does nothing when no connection exists' do
+      expect { described_class.close_connection }.not_to raise_error
     end
   end
 end

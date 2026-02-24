@@ -13,6 +13,17 @@ module ThinkingSphinx
           handle_response(response)
         end
 
+        def self.close_connection
+          conn = Thread.current[:thinking_sphinx_http_connection]
+          return unless conn
+
+          conn.finish if conn.started?
+        rescue IOError
+          # already closed
+        ensure
+          Thread.current[:thinking_sphinx_http_connection] = nil
+        end
+
         private
 
         def build_ndjson
@@ -34,16 +45,28 @@ module ThinkingSphinx
 
         def post_bulk(ndjson)
           uri = URI("http://#{host}:#{port}/bulk")
+          request = Net::HTTP::Post.new(uri)
+          request['Content-Type'] = 'application/x-ndjson'
+          request.body = ndjson
 
-          Net::HTTP.start(uri.host, uri.port, open_timeout: 5, read_timeout: 60) do |http|
-            request = Net::HTTP::Post.new(uri)
-            request['Content-Type'] = 'application/x-ndjson'
-            request.body = ndjson
-            http.request(request)
-          end
+          connection.request(request)
         rescue StandardError => error
+          self.class.close_connection
           raise ThinkingSphinx::ConnectionError,
             "HTTP bulk import failed: #{error.message}"
+        end
+
+        def connection
+          conn = Thread.current[:thinking_sphinx_http_connection]
+          return conn if conn&.started?
+
+          conn = Net::HTTP.new(host, port)
+          conn.open_timeout = 5
+          conn.read_timeout = 60
+          conn.keep_alive_timeout = 30
+          conn.start
+
+          Thread.current[:thinking_sphinx_http_connection] = conn
         end
 
         def handle_response(response)
