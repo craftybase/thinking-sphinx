@@ -33,6 +33,7 @@ module ThinkingSphinx
         def build_insert_line(row)
           document_id = row.first
           attributes  = columns.zip(row).drop(1).to_h
+          attributes.transform_values! { |v| coerce_value(v) }
 
           JSON.generate(
             insert: {
@@ -41,6 +42,17 @@ module ThinkingSphinx
               doc:   attributes
             }
           )
+        end
+
+        def coerce_value(value)
+          case value
+          when Time, DateTime
+            value.to_i
+          when Date
+            value.to_time.to_i
+          else
+            value
+          end
         end
 
         def post_bulk(ndjson)
