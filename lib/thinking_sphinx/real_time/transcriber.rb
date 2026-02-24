@@ -67,7 +67,7 @@ class ThinkingSphinx::RealTime::Transcriber
   end
 
   def inserter_class
-    protocol = configuration.settings['bulk_import_protocol']
+    protocol = configuration.settings['bulk_protocol']
     case protocol
     when 'http'
       ThinkingSphinx::RealTime::BulkInserters::HttpInserter
