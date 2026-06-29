@@ -8,8 +8,8 @@ RSpec.describe ThinkingSphinx::RealTime::Transcriber do
     :fields => [double(:name => 'field_a'), double(:name => 'field_b')],
     :attributes => [double(:name => 'attr_a'), double(:name => 'attr_b')],
     :primary_key => :id }
-  let(:insert)        { double :replace! => replace }
-  let(:replace)       { double :to_sql => 'REPLACE QUERY' }
+  let(:insert)        { double :replace! => replace, :to_sql => 'REPLACE QUERY' }
+  let(:replace)       { double }
   let(:connection)    { double :execute => true }
   let(:instance_a)    { double :id => 48, :persisted? => true }
   let(:instance_b)    { double :id => 49, :persisted? => true }

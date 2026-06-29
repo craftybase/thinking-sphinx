@@ -7,7 +7,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::SqlInserter do
   let(:columns)    { ['id', 'title', 'content'] }
   let(:values)     { [[1, 'First', 'Content 1'], [2, 'Second', 'Content 2']] }
   let(:inserter)   { described_class.new(index, columns, values) }
-  let(:connection) { double('connection') }
+  let(:connection) { double('connection', :execute => true) }
   let(:query)      { double('query', :to_sql => 'REPLACE INTO ...') }
 
   before do

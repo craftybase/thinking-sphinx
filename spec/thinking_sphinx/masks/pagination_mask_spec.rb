@@ -26,7 +26,8 @@ describe ThinkingSphinx::Masks::PaginationMask do
 
   describe '#last_page?' do
     before :each do
-      search.meta['total'] = '44'
+      search.meta['total']       = '44'
+      search.meta['total_found'] = '44'
     end
 
     it "is true when there's no more pages" do
@@ -42,7 +43,8 @@ describe ThinkingSphinx::Masks::PaginationMask do
 
   describe '#next_page' do
     before :each do
-      search.meta['total'] = '44'
+      search.meta['total']       = '44'
+      search.meta['total_found'] = '44'
     end
 
     it "should return one more than the current page" do
@@ -58,7 +60,8 @@ describe ThinkingSphinx::Masks::PaginationMask do
 
   describe '#next_page?' do
     before :each do
-      search.meta['total'] = '44'
+      search.meta['total']       = '44'
+      search.meta['total_found'] = '44'
     end
 
     it "is true when there is a second page" do
@@ -101,7 +104,7 @@ describe ThinkingSphinx::Masks::PaginationMask do
   describe '#total_pages' do
     before :each do
       search.meta['total']       = '40'
-      search.meta['total_found'] = '44'
+      search.meta['total_found'] = '40'
     end
 
     it "uses the total available from the search request metadata" do
