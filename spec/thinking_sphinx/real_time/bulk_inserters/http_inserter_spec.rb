@@ -10,7 +10,18 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
   let(:configuration) { double('configuration') }
   let(:searchd)       { double('searchd', :address => '127.0.0.1', :http => 9308) }
   let(:http)          { double('http', :started? => true) }
-  let(:response)      { double('response', :code => '200', :body => '{"items":[]}') }
+  let(:response)      { http_response('200', '{"items":[]}') }
+
+  # Build a real Net::HTTPResponse subtype so `case ... when Net::HTTPSuccess`
+  # in HttpInserter#handle_response matches as it does in production. A bare
+  # RSpec double is not a Net::HTTPSuccess, so the success-path examples would
+  # otherwise all fall through to the error branch.
+  def http_response(code, body)
+    klass = Integer(code) < 400 ? Net::HTTPOK : Net::HTTPInternalServerError
+    klass.new('1.1', code.to_s, 'message').tap do |response|
+      allow(response).to receive(:body).and_return(body)
+    end
+  end
 
   before do
     allow(ThinkingSphinx::Configuration).to receive(:instance).
@@ -148,7 +159,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
     end
 
     context 'when HTTP request fails' do
-      let(:response) { double('response', :code => '500', :body => 'Internal Error') }
+      let(:response) { http_response('500', 'Internal Error') }
 
       it 'raises a QueryError' do
         expect {
@@ -159,7 +170,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
 
     context 'when response contains item errors' do
       let(:response) do
-        double('response', :code => '200', :body => JSON.generate({
+        http_response('200', JSON.generate({
           'items' => [
             { 'replace' => { 'status' => 200 } },
             { 'replace' => { 'error' => 'field mismatch' } }
@@ -176,7 +187,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
     end
 
     context 'when response is not valid JSON' do
-      let(:response) { double('response', :code => '200', :body => 'not json') }
+      let(:response) { http_response('200', 'not json') }
 
       it 'raises a QueryError' do
         expect {
