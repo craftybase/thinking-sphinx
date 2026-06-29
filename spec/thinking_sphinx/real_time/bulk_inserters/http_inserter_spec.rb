@@ -38,7 +38,7 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
         expect(request).to be_a(Net::HTTP::Post)
         expect(request.path).to eq('/bulk')
         expect(request['Content-Type']).to eq('application/x-ndjson')
-        expect(request.body).to include('"insert"')
+        expect(request.body).to include('"replace"')
         expect(request.body).to include('"article_core"')
       end.and_return(response)
 
@@ -71,17 +71,35 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
         expect(lines.size).to eq(2)
 
         first = JSON.parse(lines[0])
-        expect(first['insert']['index']).to eq('article_core')
-        expect(first['insert']['id']).to eq(1)
-        expect(first['insert']['doc']).to eq({
-          'id' => 1,
+        expect(first['replace']['index']).to eq('article_core')
+        expect(first['replace']['id']).to eq(1)
+        # doc carries the field/attribute columns only; the document id is the
+        # top-level `id`, not a doc field (columns.zip(row).drop(1))
+        expect(first['replace']['doc']).to eq({
           'title' => 'First',
           'content' => 'Content 1',
           'views' => 100
         })
 
         second = JSON.parse(lines[1])
-        expect(second['insert']['id']).to eq(2)
+        expect(second['replace']['id']).to eq(2)
+      end.and_return(response)
+
+      inserter.execute
+    end
+
+    # Regression: craftybase CU-868k5c7jn. The HTTP transport must emit the
+    # idempotent `replace` action, never `insert`. `insert` returns a
+    # duplicate-id error when the real-time callback path races a batch reindex,
+    # failing the entire /bulk request; `replace` is a true upsert on RT tables,
+    # matching the REPLACE semantics the SQL transport always had.
+    it 'emits the idempotent replace action, never insert' do
+      expect(http).to receive(:request) do |request|
+        request.body.split("\n").each do |line|
+          parsed = JSON.parse(line)
+          expect(parsed).to have_key('replace')
+          expect(parsed).not_to have_key('insert')
+        end
       end.and_return(response)
 
       inserter.execute
@@ -143,8 +161,8 @@ RSpec.describe ThinkingSphinx::RealTime::BulkInserters::HttpInserter do
       let(:response) do
         double('response', :code => '200', :body => JSON.generate({
           'items' => [
-            { 'insert' => { 'status' => 200 } },
-            { 'insert' => { 'error' => 'field mismatch' } }
+            { 'replace' => { 'status' => 200 } },
+            { 'replace' => { 'error' => 'field mismatch' } }
           ]
         }))
       end
