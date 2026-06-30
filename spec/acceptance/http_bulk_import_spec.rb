@@ -8,18 +8,17 @@ describe 'HTTP bulk import', :live do
     original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
-      # Configure HTTP bulk import
+      # Configure HTTP bulk import. The real-time transcriber reads this setting
+      # at write time, so setting it before creating records routes the index
+      # writes through the HTTP /bulk path (the feature under test).
       ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
-      # Create test products
+      # Create test product. For a real-time index this triggers indexing via
+      # the configured bulk protocol immediately — no separate populate step.
       product = Product.create!(
         :name => 'HTTP Test Widget',
         :description => 'Testing HTTP bulk import functionality'
       )
-
-      # Trigger index population
-      index.real_time_indices.each(&:clear)
-      ThinkingSphinx::RealTime::Populator.populate(index)
 
       # Verify the product was indexed
       results = Product.search('HTTP Test Widget')
@@ -44,17 +43,13 @@ describe 'HTTP bulk import', :live do
     begin
       ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
-      # Create multiple products
+      # Create multiple products, each indexed via the HTTP /bulk path on create.
       products = 50.times.map do |i|
         Product.create!(
           :name => "Bulk Product #{i}",
           :description => "Description for product #{i}"
         )
       end
-
-      # Populate index
-      index.real_time_indices.each(&:clear)
-      ThinkingSphinx::RealTime::Populator.populate(index)
 
       # Verify all products are searchable
       results = Product.search('Bulk Product')
@@ -78,17 +73,13 @@ describe 'HTTP bulk import', :live do
     begin
       ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'http'
 
-      # Create product with different attribute types
+      # Create product with different attribute types, indexed via HTTP on create.
       product = Product.create!(
         :name => 'Multi-type Product',
         :description => 'Has various attributes',
         :created_at => Time.now,
         :price => 99.99
       )
-
-      # Populate and search
-      index.real_time_indices.each(&:clear)
-      ThinkingSphinx::RealTime::Populator.populate(index)
 
       results = Product.search('Multi-type')
       expect(results.to_a).to include(product)
@@ -105,16 +96,13 @@ describe 'HTTP bulk import', :live do
     original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
-      # Explicitly set to mysql41
+      # Explicitly set to mysql41 so writes go through the SQL inserter.
       ThinkingSphinx::Configuration.instance.settings['bulk_protocol'] = 'mysql41'
 
       product = Product.create!(
         :name => 'SQL Test Widget',
         :description => 'Testing SQL bulk import'
       )
-
-      index.real_time_indices.each(&:clear)
-      ThinkingSphinx::RealTime::Populator.populate(index)
 
       results = Product.search('SQL Test Widget')
       expect(results.to_a).to include(product)
@@ -131,16 +119,13 @@ describe 'HTTP bulk import', :live do
     original_protocol = ThinkingSphinx::Configuration.instance.settings['bulk_protocol']
 
     begin
-      # Remove the setting to test default behavior
+      # Remove the setting to test default behavior (SQL inserter).
       ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
 
       product = Product.create!(
         :name => 'Default Protocol Widget',
         :description => 'Testing default protocol'
       )
-
-      index.real_time_indices.each(&:clear)
-      ThinkingSphinx::RealTime::Populator.populate(index)
 
       results = Product.search('Default Protocol')
       expect(results.to_a).to include(product)
@@ -151,9 +136,5 @@ describe 'HTTP bulk import', :live do
         ThinkingSphinx::Configuration.instance.settings.delete('bulk_protocol')
       end
     end
-  end
-
-  def index
-    ThinkingSphinx::Configuration.instance.index('product')
   end
 end

@@ -4,6 +4,7 @@ multi_schema = MultiSchema.new
 
 ThinkingSphinx::Index.define :product, :with => :real_time do
   indexes name, :sortable => true
+  indexes description
 
   has category_ids, :type => :integer, :multi => true
   has options, :type => :json if JSONColumn.call
