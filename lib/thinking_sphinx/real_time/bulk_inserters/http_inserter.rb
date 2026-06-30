@@ -14,7 +14,7 @@ module ThinkingSphinx
         # /bulk request — whereas the SQL transport this replaced always used
         # REPLACE. Kept as a single constant so build_insert_line and
         # check_for_item_errors can never drift apart. See craftybase CU-868k5c7jn.
-        ACTION = :replace
+        ACTION = "replace"
 
         def execute
           ndjson   = build_ndjson
@@ -105,7 +105,7 @@ module ThinkingSphinx
 
           if result['items']
             result['items'].each do |item|
-              entry = item[ACTION.to_s]
+              entry = item[ACTION]
               next unless entry && entry['error']
 
               ThinkingSphinx.output.puts(
