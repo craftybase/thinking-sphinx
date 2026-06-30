@@ -7,6 +7,15 @@ module ThinkingSphinx
   module RealTime
     module BulkInserters
       class HttpInserter < Base
+        # Manticore /bulk action verb. MUST be `replace` (a true upsert on RT
+        # tables): inserts when the id is absent, overwrites when present. The
+        # non-idempotent `insert` action returns a duplicate-id error whenever
+        # the real-time callback path races a batch reindex, failing the whole
+        # /bulk request — whereas the SQL transport this replaced always used
+        # REPLACE. Kept as a single constant so build_insert_line and
+        # check_for_item_errors can never drift apart. See craftybase CU-868k5c7jn.
+        ACTION = "replace"
+
         def execute
           ndjson   = build_ndjson
           response = post_bulk(ndjson)
@@ -36,7 +45,7 @@ module ThinkingSphinx
           attributes.transform_values! { |v| coerce_value(v) }
 
           JSON.generate(
-            insert: {
+            ACTION => {
               index: index.name,
               id:    document_id,
               doc:   attributes
@@ -96,12 +105,12 @@ module ThinkingSphinx
 
           if result['items']
             result['items'].each do |item|
-              if item['insert'] && item['insert']['error']
-                error = item['insert']['error']
-                ThinkingSphinx.output.puts(
-                  "Bulk insert item error: #{error}"
-                )
-              end
+              entry = item[ACTION]
+              next unless entry && entry['error']
+
+              ThinkingSphinx.output.puts(
+                "Bulk import item error: #{entry['error']}"
+              )
             end
           end
         rescue JSON::ParserError => error
