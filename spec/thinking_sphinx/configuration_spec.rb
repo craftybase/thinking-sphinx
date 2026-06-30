@@ -222,6 +222,7 @@ describe ThinkingSphinx::Configuration do
 
     it 'sets Riddle::Query.escape_characters when configured' do
       write_configuration 'escape_characters' => '[\(\)\|\-!@~]'
+      config # force initialisation so apply_riddle_settings! runs with the stub
 
       expect(Riddle::Query.escape_characters).to eq(/[\(\)\|\-!@~]/)
     end

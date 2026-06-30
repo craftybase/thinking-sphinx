@@ -32,11 +32,9 @@ describe 'Paginating search results', :live => true do
     21.times { |number| Article.create :title => "Article #{number}" }
     index
 
-    if ENV["SPHINX_ENGINE"] == "manticore" && ENV["SPHINX_VERSION"].to_f >= 4.0
-      # I suspect this is a bug in Manticore?
-      expect(Article.search.total_pages).to eq(1)
-    else
-      expect(Article.search.total_pages).to eq(2)
-    end
+    # total_pages is ceil(total_found / per_page): 21 (Sphinx) or 22 (Manticore
+    # counts one extra) results at 20 per page both round up to 2 — so this is
+    # engine-independent, unlike the total_entries count above.
+    expect(Article.search.total_pages).to eq(2)
   end
 end
